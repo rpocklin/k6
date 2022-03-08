@@ -39,6 +39,7 @@ func TestNewConfig(t *testing.T) {
 	config := NewConfig()
 	assert.Equal(t, "file.csv", config.FileName.String)
 	assert.Equal(t, "1s", config.SaveInterval.String())
+	assert.Equal(t, null.BoolFrom(false), config.UseISO8601)
 }
 
 func TestApply(t *testing.T) {
@@ -46,23 +47,28 @@ func TestApply(t *testing.T) {
 		{
 			FileName:     null.StringFrom(""),
 			SaveInterval: types.NullDurationFrom(2 * time.Second),
+			UseISO8601:   null.BoolFrom(false),
 		},
 		{
 			FileName:     null.StringFrom("newPath"),
 			SaveInterval: types.NewNullDuration(time.Duration(1), false),
+			UseISO8601:   null.BoolFrom(true),
 		},
 	}
 	expected := []struct {
 		FileName     string
 		SaveInterval string
+		UseISO8601   null.Bool
 	}{
 		{
 			FileName:     "",
 			SaveInterval: "2s",
+			UseISO8601:   null.BoolFrom(false),
 		},
 		{
 			FileName:     "newPath",
 			SaveInterval: "1s",
+			UseISO8601:   null.BoolFrom(true),
 		},
 	}
 
@@ -75,6 +81,7 @@ func TestApply(t *testing.T) {
 
 			assert.Equal(t, expected.FileName, baseConfig.FileName.String)
 			assert.Equal(t, expected.SaveInterval, baseConfig.SaveInterval.String())
+			assert.Equal(t, expected.UseISO8601, baseConfig.UseISO8601)
 		})
 	}
 }
@@ -125,6 +132,12 @@ func TestParseArg(t *testing.T) {
 		},
 		"filename=test.csv,save_interval=5s": {
 			expectedErr: true,
+		},
+		"fileName=test.csv,useISO8601=true": {
+			config: Config{
+				FileName:   null.StringFrom("test.csv"),
+				UseISO8601: null.BoolFrom(true),
+			},
 		},
 	}
 

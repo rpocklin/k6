@@ -23,6 +23,7 @@ package csv
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -38,6 +39,7 @@ type Config struct {
 	// Samples.
 	FileName     null.String        `json:"file_name" envconfig:"K6_CSV_FILENAME"`
 	SaveInterval types.NullDuration `json:"save_interval" envconfig:"K6_CSV_SAVE_INTERVAL"`
+	UseISO8601   null.Bool          `json:"use_iso8601" envconfig:"K6_CSV_USE_ISO_8601"`
 }
 
 // NewConfig creates a new Config instance with default values for some fields.
@@ -45,6 +47,7 @@ func NewConfig() Config {
 	return Config{
 		FileName:     null.StringFrom("file.csv"),
 		SaveInterval: types.NullDurationFrom(1 * time.Second),
+		UseISO8601:   null.BoolFrom(false),
 	}
 }
 
@@ -56,6 +59,9 @@ func (c Config) Apply(cfg Config) Config {
 	if cfg.SaveInterval.Valid {
 		c.SaveInterval = cfg.SaveInterval
 	}
+	if cfg.UseISO8601.Valid {
+		c.UseISO8601 = cfg.UseISO8601
+	}
 	return c
 }
 
@@ -66,6 +72,7 @@ func ParseArg(arg string, logger *logrus.Logger) (Config, error) {
 	if !strings.Contains(arg, "=") {
 		c.FileName = null.StringFrom(arg)
 		c.SaveInterval = types.NullDurationFrom(1 * time.Second)
+		c.UseISO8601 = null.BoolFrom(false)
 		return c, nil
 	}
 
@@ -89,6 +96,13 @@ func ParseArg(arg string, logger *logrus.Logger) (Config, error) {
 			fallthrough
 		case "fileName":
 			c.FileName = null.StringFrom(r[1])
+		case "useISO8601":
+			useISO8601, err := strconv.ParseBool(r[1])
+			if err != nil {
+				return c, err
+			}
+			c.UseISO8601 = null.BoolFrom(useISO8601)
+
 		default:
 			return c, fmt.Errorf("unknown key %q as argument for csv output", r[0])
 		}
